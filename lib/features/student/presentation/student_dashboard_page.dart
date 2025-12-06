@@ -1,69 +1,46 @@
 import 'package:flutter/material.dart';
+import '../../../core/layout/role_destination.dart';
+import '../../../core/layout/role_shell.dart';
 
 class StudentDashboardPage extends StatelessWidget {
   const StudentDashboardPage({super.key});
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature: đang phát triển...')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('UpNest Edu - Sinh viên'),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFF97316), Color(0xFFEC4899)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  'Sinh viên',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_note_outlined),
-              title: const Text('Lịch học'),
-              onTap: () => _showComingSoon(context, 'Lịch học'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.class_outlined),
-              title: const Text('Lớp đã đăng ký'),
-              onTap: () => _showComingSoon(context, 'Lớp đã đăng ký'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events_outlined),
-              title: const Text('Kết quả học tập'),
-              onTap: () => _showComingSoon(context, 'Kết quả học tập'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_shared_outlined),
-              title: const Text('Tài liệu học tập'),
-              onTap: () => _showComingSoon(context, 'Tài liệu học tập'),
-            ),
-          ],
+    return RoleShell(
+      appBarTitle: 'UpNest Edu - Sinh viên',
+      sideTitle: 'Sinh viên',
+      sideHeaderColor: const Color(0xFFF97316), // cam hồng cho student
+      destinations: [
+        RoleDestination(
+          icon: Icons.event_note_outlined,
+          label: 'Lịch học',
+          builder: (_) => const Center(
+            child: Text('Sinh viên - Lịch học'),
+          ),
         ),
-      ),
-      body: const Center(
-        child: Text('Dashboard Sinh viên - Thông tin học tập'),
-      ),
+        RoleDestination(
+          icon: Icons.class_outlined,
+          label: 'Lớp đã đăng ký',
+          builder: (_) => const Center(
+            child: Text('Sinh viên - Lớp đã đăng ký'),
+          ),
+        ),
+        RoleDestination(
+          icon: Icons.emoji_events_outlined,
+          label: 'Kết quả học tập',
+          builder: (_) => const Center(
+            child: Text('Sinh viên - Kết quả học tập'),
+          ),
+        ),
+        RoleDestination(
+          icon: Icons.folder_shared_outlined,
+          label: 'Tài liệu học tập',
+          builder: (_) => const Center(
+            child: Text('Sinh viên - Tài liệu học tập'),
+          ),
+        ),
+      ],
     );
   }
 }

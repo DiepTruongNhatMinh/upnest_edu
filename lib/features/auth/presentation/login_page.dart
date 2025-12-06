@@ -1,10 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/centered_card.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../domain/user_role.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,7 +19,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  UserRole _selectedRole = UserRole.student;
 
   bool _isLoading = false;
 
@@ -33,26 +34,68 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
 
-    // TODO: sau này bạn thay bằng gọi API / Firebase auth
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // ⚠️ Nếu chạy Flutter web trên cùng máy backend:
+      final uri = Uri.parse('http://localhost:5000/api/auth/login');
 
-    setState(() => _isLoading = false);
+      // Nếu sau này chạy Android emulator:
+      // final uri = Uri.parse('http://10.0.2.2:5000/api/auth/login');
 
-    String route;
-    switch (_selectedRole) {
-      case UserRole.admin:
-        route = UpnestRoutes.adminHome;
-        break;
-      case UserRole.lecturer:
-        route = UpnestRoutes.lecturerHome;
-        break;
-      case UserRole.student:
-        route = UpnestRoutes.studentHome;
-        break;
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _usernameCtrl.text.trim(),
+          'password': _passwordCtrl.text,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final roleCode = data['roleCode'] as String? ?? '';
+        // final token = data['token'] as String; // TODO: lưu lại nếu cần
+
+        String route;
+        switch (roleCode.toUpperCase()) {
+          case 'ADMIN':
+            route = UpnestRoutes.adminHome;
+            break;
+          case 'LECTURER':
+            route = UpnestRoutes.lecturerHome;
+            break;
+          case 'STUDENT':
+          default:
+            route = UpnestRoutes.studentHome;
+            break;
+        }
+
+        Navigator.pushReplacementNamed(context, route);
+      } else {
+        String message = 'Đăng nhập thất bại, vui lòng kiểm tra lại.';
+
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map && body['message'] != null) {
+            message = body['message'].toString();
+          }
+        } catch (_) {}
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi kết nối: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, route);
   }
 
   @override
@@ -80,7 +123,6 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
-                    // Logo + Title
                     Text(
                       'UpNest Edu',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -94,7 +136,6 @@ class _LoginPageState extends State<LoginPage> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 24),
-                    // Card Login
                     CenteredCard(
                       child: Form(
                         key: _formKey,
@@ -127,29 +168,6 @@ class _LoginPageState extends State<LoginPage> {
                               validator: (v) =>
                                   Validators.requiredField(v, 'Vui lòng nhập mật khẩu'),
                             ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<UserRole>(
-                              value: _selectedRole,
-                              decoration: const InputDecoration(
-                                labelText: 'Vai trò',
-                                prefixIcon: Icon(Icons.badge_outlined),
-                              ),
-                              items: UserRole.values
-                                  .map(
-                                    (role) => DropdownMenuItem(
-                                      value: role,
-                                      child: Text(role.label),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (role) {
-                                if (role != null) {
-                                  setState(() {
-                                    _selectedRole = role;
-                                  });
-                                }
-                              },
-                            ),
                             const SizedBox(height: 24),
                             PrimaryButton(
                               text: 'Đăng nhập',
@@ -158,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Demo: hiện tại chỉ check form, không kiểm tra tài khoản thực.',
+                              'Tài khoản demo: admin/admin123, gv01/gv123, sv01/sv123 (đăng nhập kiểm tra từ SQL + Node API).',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
