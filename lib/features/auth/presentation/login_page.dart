@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,6 +8,8 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/centered_card.dart';
 import '../../../core/widgets/primary_button.dart';
+
+import 'package:upnest_edu/features/auth/data/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,6 +25,23 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _isLoading = false;
 
+  String _baseUrl() {
+    if (kIsWeb) return 'http://localhost:5000';
+    // Android emulator:
+    // return 'http://10.0.2.2:5000';
+    // Android thật (đổi IP LAN PC chạy Node):
+    // return 'http://192.168.1.10:5000';
+    return 'http://localhost:5000';
+  }
+
+  int _toInt(dynamic v, {int fallback = 0}) {
+    if (v == null) return fallback;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? fallback;
+    return fallback;
+  }
+
   @override
   void dispose() {
     _usernameCtrl.dispose();
@@ -35,15 +55,11 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ⚠️ Nếu chạy Flutter web trên cùng máy backend:
-      final uri = Uri.parse('http://localhost:5000/api/auth/login');
-
-      // Nếu sau này chạy Android emulator:
-      // final uri = Uri.parse('http://10.0.2.2:5000/api/auth/login');
+      final uri = Uri.parse('${_baseUrl()}/api/auth/login');
 
       final response = await http.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: const {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': _usernameCtrl.text.trim(),
           'password': _passwordCtrl.text,
@@ -54,27 +70,36 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final roleCode = data['roleCode'] as String? ?? '';
-        // final token = data['token'] as String; // TODO: lưu lại nếu cần
 
-        String route;
-        switch (roleCode.toUpperCase()) {
-          case 'ADMIN':
-            route = UpnestRoutes.adminHome;
-            break;
-          case 'LECTURER':
-            route = UpnestRoutes.lecturerHome;
-            break;
-          case 'STUDENT':
-          default:
-            route = UpnestRoutes.studentHome;
-            break;
+        final token = (data['token'] ?? '').toString();
+        final roleCode = (data['roleCode'] ?? '').toString();
+        final userId = _toInt(data['userId']);
+        final fullName = (data['fullName'] ?? '').toString();
+
+        if (token.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Backend trả về thiếu token.')),
+          );
+          return;
         }
+
+        await AuthService.saveLogin(
+          token: token,
+          roleCode: roleCode,
+          userId: userId,
+          fullName: fullName,
+        );
+
+        final upper = roleCode.toUpperCase();
+        final route = switch (upper) {
+          'ADMIN' => UpnestRoutes.adminHome,
+          'LECTURER' => UpnestRoutes.lecturerHome,
+          _ => UpnestRoutes.studentHome,
+        };
 
         Navigator.pushReplacementNamed(context, route);
       } else {
         String message = 'Đăng nhập thất bại, vui lòng kiểm tra lại.';
-
         try {
           final body = jsonDecode(response.body);
           if (body is Map && body['message'] != null) {
@@ -92,23 +117,21 @@ class _LoginPageState extends State<LoginPage> {
         SnackBar(content: Text('Lỗi kết nối: $e')),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              colorScheme.primary.withOpacity(0.1),
-              colorScheme.primaryContainer.withOpacity(0.3),
+              cs.primary.withOpacity(0.10),
+              cs.primaryContainer.withOpacity(0.30),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -127,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
                       'UpNest Edu',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
+                            color: cs.primary,
                           ),
                     ),
                     const SizedBox(height: 4),
@@ -140,13 +163,10 @@ class _LoginPageState extends State<LoginPage> {
                       child: Form(
                         key: _formKey,
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'Đăng nhập',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
+                            Text('Đăng nhập',
+                                style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _usernameCtrl,
@@ -176,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Tài khoản demo: admin/admin123, gv01/gv123, sv01/sv123 (đăng nhập kiểm tra từ SQL + Node API).',
+                              'Demo: admin/admin123, gv01/gv123, sv01/sv123',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall

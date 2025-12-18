@@ -1,37 +1,44 @@
 name: upnest_edu
-description: "A new Flutter project."
+description: "UpNest Edu - Education Management Platform (Flutter + NodeJS)"
 publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: ">=3.9.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
+  # iOS style icons
   cupertino_icons: ^1.0.8
 
-  # ===== NEW DEPENDENCIES =====
+  # =========================
+  # CORE DEPENDENCIES
+  # =========================
 
-  # Gọi API Node.js (login, CRUD…)
-  http: ^1.2.0
+  # Gọi API Node.js (login, CRUD, admin, student, lecturer)
+  http: ^1.2.1
 
-  # Lưu token JWT, ghi nhớ login
-  shared_preferences: ^2.2.3
+  # Lưu JWT token, remember login
+  shared_preferences: ^2.3.2
 
-  # Quản lý state nâng cao (không bắt buộc nhưng KHÔNG BAO GIỜ thừa)
-  flutter_riverpod: ^2.5.1
-
-  # Font Google (Roboto, Inter…)
+  # Google Fonts (Roboto, Inter...)
   google_fonts: ^6.2.1
 
-  # Hiển thị file .svg trong sidebar/menu/dashboard
-  flutter_svg: ^2.0.9
+  # SVG icons (sidebar, dashboard, menu)
+  flutter_svg: ^2.0.10
 
-  # Format ngày, số, tiền tệ
+  # Date / number formatting
   intl: ^0.19.0
+
+  # =========================
+  # STATE MANAGEMENT (OPTIONAL – dùng sau)
+  # =========================
+  # Hiện tại bạn đang dùng StatefulWidget là OK.
+  # Riverpod giữ lại để scale về sau (KHÔNG BẮT BUỘC dùng ngay).
+  flutter_riverpod: ^2.5.1
 
 
 dev_dependencies:
@@ -40,16 +47,23 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
 
+
 flutter:
   uses-material-design: true
 
-  # Uncomment nếu bạn có assets
+  # =========================
+  # ASSETS (bật khi cần)
+  # =========================
   # assets:
   #   - assets/images/
   #   - assets/icons/
 
-  # Uncomment nếu bạn dùng custom fonts
+  # =========================
+  # CUSTOM FONTS (bật khi cần)
+  # =========================
   # fonts:
-  #   - family: MyFont
+  #   - family: Inter
   #     fonts:
-  #       - asset: fonts/MyFont-Regular.ttf
+  #       - asset: fonts/Inter-Regular.ttf
+  #       - asset: fonts/Inter-SemiBold.ttf
+  #         weight: 600
